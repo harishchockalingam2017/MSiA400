@@ -1,0 +1,149 @@
+---
+title: "MSiA 400 Lab 2
+        Harish Chockalingam"
+output:
+  pdf_document: default
+  html_notebook: default
+Name: Harish Chockalingam
+---
+
+```{r}
+#Problem 1
+redwine<-read.table('redwine.txt',header=T)
+mean_RS<-mean(redwine$RS,na.rm=T)
+mean_SD<-mean(redwine$SD,na.rm=T)
+mean_RS
+mean_SD
+
+#The RS and SD average after removing NAs is 2.53 and 46.29 respectively
+```
+
+```{r}
+#Problem 2
+M<-cbind(redwine$FS,redwine$SD)
+M<-na.omit(M)
+FS.obs<-M[,1]
+SD.obs<-M[,2]
+ABC<-lm(SD.obs~FS.obs)
+coef<-coefficients(ABC)
+coef
+
+#There are 17 missing SD values. After removing the missing SD and respective 
+#FD values, fitting yields a 
+#intercept of 13.18 and coefficient of 2.08
+```
+
+```{r}
+#Problem 3
+SD<-redwine$SD
+missingSD <- is.na(SD)  
+FS_17<-redwine$FS[missingSD]
+
+SD_predict<-coef[1]+coef[2]*FS_17
+redwine$SD[missingSD]<-SD_predict
+mean(redwine$SD)
+
+#The mean for SD after imputation is 46.30182, not a huge change
+```
+```{r}
+#Problem 4
+avg.imp <- function (a, avg){
+        missing <- is.na(a)
+        imputed <- a
+        imputed[missing] <- avg
+        return (imputed)
+        }
+
+RS_ave<-mean(na.omit(redwine$RS))
+RS_imp<-avg.imp(redwine$RS,RS_ave)
+redwine$RS<-RS_imp
+mean(RS_imp)
+
+#The average value for RS is 2.537952
+```
+
+```{r}
+#Problem 5
+winemodel<-lm(redwine$QA~redwine$FA+redwine$VA+redwine$CA+redwine$RS+redwine$CH+
+                redwine$FS+redwine$SD+redwine$DE+redwine$PH+redwine$SU+redwine$AL)
+coefficients(winemodel)
+
+#The coefficients:
+#Intercep: 47.202 FA:0.0684 VA:-1.097 CA:-0.179 RS:0.026  CH:-1.631 
+#FS:0.0035 SD:-0.0028  DE:-44.817  PH:0.036  SU: 0.944 AL:0.247
+```
+
+```{r}
+#Problem 6
+summary(winemodel)
+
+#From the summary R^2 is 0.3584, and based on a significance level of 0.05 
+#the PH attribute is least likely related to QA
+#as it has a high p-value of 0.4144
+```
+
+```{r}
+#Problem 7
+CVInd  <-  function(n,K){    #n  is  sample  size;  K  is  number  of  parts;  
+  #returns  K-length  list  of indices for each part  
+  m<-floor(n/K)  #approximate size of each part   
+  r<-n-m*K     
+  I<-sample(n,n)  #random reordering of the indices   
+  Ind<-list()  #will be list of indices for all K parts   
+  length(Ind)<-K   
+  for (k in 1:K) {      
+    if (k <= r) kpart <- ((m+1)*(k-1)+1):((m+1)*k)           
+      else kpart<-((m+1)*r+m*(k-r-1)+1):((m+1)*r+m*(k-r))      
+    Ind[[k]] <- I[kpart]  #indices for kth part of data  
+    }   
+    Ind }
+
+Nrep<-20 #number of replicates of CV
+K<-5  #K-fold CV on each replicate
+n=nrow(redwine)
+y<-redwine$QA
+SSE<-matrix(0,Nrep,1)
+for (j in 1:Nrep) {  
+  Ind<-CVInd(n,K)  
+  yhat11<-y 
+  for (k in 1:K) {     
+    out11<-lm(QA~.,redwine[-Ind[[k]],])     
+    yhat11[Ind[[k]]]<-as.numeric(predict(out11,redwine[Ind[[k]],]))     
+    } #end of k loop  
+  SSE[j]=c(sum((y-yhat11)^2))
+  } #end of j loop
+SSE
+apply(SSE,2,mean)
+
+#The average error rate after 20 replications is 683.4685
+```
+
+```{r}
+#Problem 8
+PH_omit<-na.omit(redwine$PH)
+PH_mean<-mean(PH_omit)
+PH_std<-sd(na.omit(redwine$PH))
+PH_lb<-PH_mean-3*PH_std
+PH_ub<-PH_mean+3*PH_std
+
+redwine2<-subset(redwine,redwine$PH<PH_ub & redwine$PH>PH_lb)
+dim(redwine2)
+
+#dimensions of redwine2 is 1580 x 12. The imputed redwine dataset had 1599 
+#values thus there were 19 outliers
+```
+
+```{r}
+#Problem 9
+winemodel2<-lm(redwine2$QA~redwine2$FA+redwine2$VA+redwine2$CA+redwine2$RS+
+                 redwine2$CH+redwine2$FS+redwine2$SD+redwine2$DE+redwine2$PH+redwine2$SU+redwine2$AL)
+summary(winemodel2)
+
+#Compared to problem 6 the R^2 went up from 0.3584 to 0.3629 (not significant increase). 
+#After removing the outliers the signifance of coefficients has changed, but 
+#both models still have 4 non-significant coefficients. Thus, winemodel2 is a slightly 
+#better model to predict QA.
+#The five attributes likely related to QA are VA, CH, SD, SU, AL they have 
+#p-values close to zero (signifcance level used 0.05)
+```
+
