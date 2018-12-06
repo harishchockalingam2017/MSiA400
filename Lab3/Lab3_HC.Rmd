@@ -1,0 +1,109 @@
+---
+title: "MSiA 400 Lab 3 Harish Chockalingam"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Problem 1
+#a
+#Markov Chain Monte Carlo is a method for sampling probablity 
+#distribution using Markov chain. By repeatedly applying a Markov chain,
+#with the random sampling of Monte Carlo method, to the sample 
+#the sample distribution will be more closer to the stationary or actual 
+#population distrubtion
+
+#b
+#The main difference is that the Metropolis algorithm requires the
+#probablity density distribution to select the next sample value to
+#be symmetric while the Metropolis-Hasting algorithm the probablity
+#density distribution can be asymmetric
+
+#c
+#Ridge Regresion is a method to optimize the predictors' coefficients so that
+#multicolinearity can be prevented and avoids for over fitting of the model by
+#penalizing some of the coefficients so they shirnk to zero
+
+#Lasso Regression is similar to Ridge Regression however it is more conservative
+#in that some of the coefficients shrink exactly zero 
+
+#d
+#IIA or indenpendce of irrelevant alternatives is the probablity of choosing
+#one of two alternatives is independent when another alternative is introduced
+#i.e if X is prefered to the alternative Y in the set {X,Y} then introducing
+#the alternative Z to the set {X,Y,Z} will not change preference to X
+```
+
+```{r}
+#Problem 2
+#a
+library(quantreg)
+data=read.csv('gas_mileage.csv')
+quants<-seq(0.05,0.95,0.05)
+fit1<-rq(Mpg~.,data=data,tau=quants) #Regressing all predictors on MPG
+```
+
+
+```{r}
+#b
+plot(fit1,mfrow = c(1,3)) #showing plots of fitted model 2 at a time
+```
+
+
+```{r}
+#c
+#From the plots the, looking at predictors Displacement, Horsepower,
+#and torque. The increasing quantiles of displacement the coefficient for
+#deteremining MPG shows a declining trend while for increasing quantiles 
+#of horsepower the coefficient for determining MPG shows an increasing
+#trend but MPG would decline after the 0.7 quantile of horsepower.
+#Similary the increasing quantiles of torque the coefficient for determining
+#MPG increases but makes a dip at the 0.6 quantile of torque and then MPG 
+#continues to increase.
+```
+
+```{r}
+#d
+fit3<-rq(Mpg~.,data=data, tau=0.5)
+summary(fit3, se='boot')
+#By bootstraping we can determine the estimators of a given population 
+#but using a signifacance level of 0.1, the summary shows 
+#a high P-value seemingly at the 0.5 quantile the predictors are insignificant
+```
+
+```{r}
+#3
+#a
+library(e1071)
+data2=read.csv('car.csv')
+svm=svm(factor(y)~.,data=data2)
+summary(svm)
+#The this model has a radial plane for classification 
+#I think the classification would perform better
+#if the kernal was tuned to be linear
+```
+
+```{r}
+#b
+plot(svm, data=data2)
+#This SVM model doesn't seem to classify the observations well.
+#There are some observations that are misclassified like at car_age=2
+#and income =20 actually bought a new car. Only one observation
+#at car_age=2 and income=65 is classified correctly as 1
+```
+
+```{r}
+#c
+a=data.frame(income=50,car_age=5)
+a$predict=predict(svm,a,type='response')
+a
+#For income=50 and car_age=5 the prediction 
+#is 1 or to purchase new car
+```
+
